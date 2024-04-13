@@ -4,6 +4,7 @@ import { Router } from "express";
 const router = Router();
 const prisma = new PrismaClient();
 
+// Create user
 router.post("/", async (req, res) => {
   const { username, name, email } = req.body;
 
@@ -23,12 +24,14 @@ router.post("/", async (req, res) => {
   }
 });
 
+// get all users
 router.get("/", async (req, res) => {
   const allUsers = await prisma.user.findMany();
 
   res.json(allUsers);
 });
 
+// Update user
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
   const { name, bio, image } = req.body;
@@ -49,12 +52,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.get("/", async (req, res) => {
-  const allUsers = await prisma.user.findMany();
-
-  res.json(allUsers);
-});
-
+// get one user
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -65,6 +63,7 @@ router.get("/:id", async (req, res) => {
   res.json(user);
 });
 
+// delete user
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
 
