@@ -1,8 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { Router } from "express";
+import jwt from "jsonwebtoken";
 
 const EMAIL_TOKEN_EXPIRATION_MINUTES = 10;
-const EMAIL_TOKEN_EXPIRATION_MINUTES = 10;
+const API_TOKEN_EXPIRATION_HOURS = 12;
+const jWT_SECRET = "SUPER SECRET";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -11,6 +13,15 @@ function generateEmailToken() {
   return Math.floor(
     10000000 + Math.random() * 90000000
   ).toString();
+}
+
+function generateAuthToken(tokenId: number): string {
+  const jwtPayload = { tokenId };
+
+  return jwt.sign(jwtPayload, jWT_SECRET, {
+    algorithm: "HS256",
+    noTimestamp: true,
+  });
 }
 
 // Create a user a user if it doesn't exist
@@ -75,10 +86,34 @@ router.post("/authentificate", async (req, res) => {
     return res.sendStatus(401);
   }
 
+  // generate api token
   const expiration = new Date(
     new Date().getTime() +
-      EMAIL_TOKEN_EXPIRATION_MINUTES * 60 * 1000
+      API_TOKEN_EXPIRATION_HOURS * 60 * 60 * 1000
   );
+
+  const apiToken = await prisma.token.create({
+    data: {
+      type: "API",
+      expiration,
+      user: {
+        connect: {
+          email,
+        },
+      },
+    },
+  });
+
+  // invalidate token
+  await prisma.token.update({
+    where: { id: dbEmailToken.id },
+    data: { valid: false },
+  });
+
+  // generate JWT token
+  const authToken = generateAuthToken(apiToken.id);
+
+  res.json({ authToken });
   res.sendStatus(200);
 });
 
